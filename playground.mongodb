@@ -1,0 +1,216 @@
+// list all databases
+show dbs
+
+// create or switch to database
+use blog
+
+// create collection method 1
+db.createCollection("posts")
+
+// insert one document
+db.posts.insertOne({
+  title: "Post Title 1",
+  body: "Body of post.",
+  category: "News",
+  likes: 1,
+  tags: ["news", "events"],
+  date: Date()
+})
+
+// insert many documents
+db.posts.insertMany([  
+  {
+    title: "Post Title 2",
+    body: "Body of post.",
+    category: "Event",
+    likes: 2,
+    tags: ["news", "events"],
+    date: Date()
+  },
+  {
+    title: "Post Title 3",
+    body: "Body of post.",
+    category: "Technology",
+    likes: 3,
+    tags: ["news", "events"],
+    date: Date()
+  },
+  {
+    title: "Post Title 4",
+    body: "Body of post.",
+    category: "Event",
+    likes: 4,
+    tags: ["news", "events"],
+    date: Date()
+  }
+])
+
+// find all
+db.posts.find()
+
+// find one
+db.posts.findOne()
+
+// query data
+db.posts.find( {category: "News"} )
+
+//  find documents by using comparison [perators
+db.sales.find({ "items.price": { $gt: 50}})
+db.sales.find({ "items.price": { $lt: 50}})
+db.sales.find({ "customer.age": { $lte: 65}})
+db.sales.find({ "customer.age": { $gte: 65}})
+
+// find using $elemMatch Operator
+db.sales.find({
+  items: {
+    $elemMatch: { name: "laptop", price: { $gt: 800 }, quantity: { $gte: 1 } },
+  },
+})
+
+// find a document by using the $or operator
+db.routes.find({
+  $or: [{ dst_airport: "SEA" }, { src_airport: "SEA" }],
+})
+
+// find a document by using the $and operator
+db.routes.find({
+  $and: [
+    { $or: [{ dst_airport: "SEA" }, { src_airport: "SEA" }] },
+    { $or: [{ "airline.name": "American Airlines" }, { airplane: 320 }] },
+  ]
+})
+
+// cannot do both inclusion and exclusion projection 
+db.posts.find({}, {title: 1, date: 0})
+
+// replace a document
+db.books.replaceOne(
+  {
+    _id: ObjectId("6282afeb441a74a98dbbec4e"),
+  },
+  {
+    title: "Data Science Fundamentals for Python and MongoDB",
+    isbn: "1484235967",
+    publishedDate: new Date("2018-5-10"),
+    thumbnailUrl:
+      "https://m.media-amazon.com/images/I/71opmUBc2wL._AC_UY218_.jpg",
+    authors: ["David Paper"],
+    categories: ["Data Science"],
+  }
+)
+
+// update one
+db.posts.updateOne( { title: "Post Title 1" }, { $set: { likes: 2 } } ) 
+
+// insert if not found
+db.posts.updateOne( 
+  { title: "Post Title 5" }, 
+  {
+    $set: 
+      {
+        title: "Post Title 5",
+        body: "Body of post.",
+        category: "Event",
+        likes: 5,
+        tags: ["news", "events"],
+        date: Date()
+      }
+  }, 
+  { upsert: true }
+)
+	
+// add new value to array field
+db.podcasts.updateOne(
+  { _id: ObjectId("5e8f8f8f8f8f8f8f8f8f8f8") },
+  { $push: { hosts: "Nic Raboy" } }
+)
+	
+// updatd document by using findAndModify()
+db.podcasts.findAndModify({
+  query: { _id: ObjectId("6261a92dfee1ff300dc80bf1") },
+  update: { $inc: { subscribers: 1 } },
+  new: true,
+})	
+
+db.books.updateMany(
+  { publishedDate: { $lt: new Date("2019-01-01") } },
+  { $set: { status: "LEGACY" } }
+)
+	
+// update all
+db.posts.updateMany({}, { $inc: { likes: 1 } })
+
+// delete one
+db.posts.deleteOne({ title: "Post Title 5" })
+
+// delete all
+db.posts.deleteMany({ category: "Technology" })
+
+// aggreggation
+db.posts.aggregate([
+  // Stage 1: Only find documents that have more than 1 like
+  {
+    $match: { likes: { $gt: 1 } }
+  },
+  // Stage 2: Group documents by category and sum each categories likes
+  {
+    $group: { _id: "$category", totalLikes: { $sum: "$likes" } }
+  }
+])
+
+// sort 
+db.companies.find({ category_code: "music" }).sort({ name: 1 });
+db.companies.find({ category_code: "music" }).sort({ name: 1, _id: 1 });
+
+// limit
+db.companies
+  .find({ category_code: "music" })
+  .sort({ number_of_employees: -1, _id: 1 })
+  .limit(3);
+  
+// include a field (projection)
+db.inspections.find(
+  { sector: "Restaurant - 818" },
+  { business_name: 1, result: 1 }
+)
+
+// exclude  a field (projection)
+db.inspections.find(
+  { result: { $in: ["Pass", "Warning"] } },
+  { date: 0, "address.zip": 0 }
+)
+db.inspections.find(
+  { sector: "Restaurant - 818" },
+  { business_name: 1, result: 1, _id: 0 }
+)
+
+// count documents
+db.trips.countDocuments({})
+db.trips.countDocuments({ tripduration: { $gt: 120 }, usertype: "Subscriber" })
+
+// match and group in an aggregation pipeline
+db.zips.aggregate([
+{   
+   $match: { 
+      state: "CA"
+    }
+},
+{
+   $group: {
+      _id: "$city",
+      totalZips: { $count : { } }
+   }
+}
+])
+
+// sort and limit in an aggregation pipeline
+db.zips.aggregate([
+{
+  $sort: {
+    pop: -1
+  }
+},
+{
+  $limit:  5
+}
+])
